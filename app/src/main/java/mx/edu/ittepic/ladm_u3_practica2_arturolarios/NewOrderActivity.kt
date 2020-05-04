@@ -5,6 +5,7 @@ import android.os.Bundle
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.android.synthetic.main.activity_new_order.*
 import mx.edu.ittepic.ladm_u3_practica1_arturolarios.Utils.Utils
+import java.io.Serializable
 
 class NewOrderActivity : AppCompatActivity() {
 
@@ -44,20 +45,9 @@ class NewOrderActivity : AppCompatActivity() {
         if (isValid())
         {
             val db = FirebaseFirestore.getInstance()
-            val type =
-                if (data.getString("type").equals("Producto"))
-                    "product"
-                else
-                    "description"
 
             db.collection("restaurant").document(data.getString("id") ?: "")
-                .update("name", txtName.text.toString(),
-                    "address", txtAddress.text.toString(),
-                    "phone", txtPhoneNumber.text.toString(),
-                    "order.$type", txtProduct.text.toString(),
-                    "order.price", txtPrice.text.toString().toFloat(),
-                    "order.quantity", npQuantity.progress,
-                    "order.delivered", chkDelivered.isChecked)
+                .set(getData())
                 .addOnSuccessListener {
                     Utils.showToastMessageLong("Se actualizó correctamente", this)
                     finish()
@@ -100,13 +90,26 @@ class NewOrderActivity : AppCompatActivity() {
         {
             val db = FirebaseFirestore.getInstance()
 
-            val type =
-                if (rdProduct.isChecked)
-                    "product"
-                else
-                    "description"
+            db.collection("restaurant").add(getData())
+                .addOnSuccessListener {
+                    clean()
+                    Utils.showToastMessageLong("Se insertó correctamente", this)
+                }
+                .addOnFailureListener {
+                    Utils.showAlertMessage("Atención", "Algo salió mal, por favor verifique su conexión a internet", this)
+                }
+        }
+    }
 
-            val order = hashMapOf(
+    private fun getData() : HashMap<String, Serializable>
+    {
+        val type =
+            if (rdProduct.isChecked)
+                "product"
+            else
+                "description"
+
+        val data = hashMapOf(
                 "name" to txtName.text.toString(),
                 "address" to txtAddress.text.toString(),
                 "phone" to txtPhoneNumber.text.toString(),
@@ -118,15 +121,7 @@ class NewOrderActivity : AppCompatActivity() {
                 )
             )
 
-            db.collection("restaurant").add(order)
-                .addOnSuccessListener {
-                    clean()
-                    Utils.showToastMessageLong("Se insertó correctamente", this)
-                }
-                .addOnFailureListener {
-                    Utils.showAlertMessage("Atención", "Algo salió mal, por favor verifique su conexión a internet", this)
-                }
-        }
+        return data
     }
 
     private fun clean()
